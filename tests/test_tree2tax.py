@@ -21,13 +21,13 @@ class TestCoverageStats:
         tree = TreeNode.read(StringIO('((A:0.11, B:0.12)C:0.1, D:0.2)root;'))
         clusters = Tree2Tax().named_clusters(tree, 0.05)
         self.assertSameClusters([['A'],['B'],['D']], clusters)
-        assert_equals(_('C1 C2 Root1'), [c.name() for c in clusters])
+        assert_equals(_('C1 C2 Root'), [c.name() for c in clusters])
          
     def testClusterEverything(self):
         tree = TreeNode.read(StringIO('((A:0.11, B:0.12)C:0.1, D:0.2)root;'))
         clusters = Tree2Tax().named_clusters(tree, 0.5)
         self.assertSameClusters([['A','B','D']], clusters)
-        assert_equals('Root1',clusters[0].name())
+        assert_equals('Root',clusters[0].name())
          
     def testClusterOnInternalNode(self):
         tree = TreeNode.read(StringIO('((((A:11, B:12)C:10, D:9)E:20, F:20)G:30)root;'))
@@ -52,6 +52,18 @@ class TestCoverageStats:
         
     def testClusterNamingOnTwoInternalNodesReverseOrder(self):
         tree = TreeNode.read(StringIO('((F:20, ((A:11, B:12):10, (H:8, D:9):3):20)G:30)root;'))
+        clusters = Tree2Tax().named_clusters(tree, 40)
+        self.assertSameClusters([['F'], _('A B D H')], clusters)
+        assert_equals(_('G2 G1'), [c.name() for c in clusters])
+        
+    def testNamingWithBootstraps(self):
+        tree = TreeNode.read(StringIO('((A:0.11, B:0.12)0.091:0.1, D:0.2)root;'))
+        clusters = Tree2Tax().named_clusters(tree, 0.05)
+        self.assertSameClusters([['A'],['B'],['D']], clusters)
+        assert_equals(_('Root1 Root2 Root3'), [c.name() for c in clusters])
+        
+    def testClusterNamingWithBootstraps(self):
+        tree = TreeNode.read(StringIO('((F:20, ((A:11, B:12):10, (H:8, D:9):3):20)\'0.7:G\':30)root;'))
         clusters = Tree2Tax().named_clusters(tree, 40)
         self.assertSameClusters([['F'], _('A B D H')], clusters)
         assert_equals(_('G2 G1'), [c.name() for c in clusters])

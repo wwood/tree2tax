@@ -2,12 +2,13 @@ from skbio.tree import TreeNode
 from sets import Set
 import logging
 import IPython
+import re
 
 class NamedCluster:
     def __init__(self, taxonomy, tips):
         self.taxonomy = taxonomy
         self.tips = tips
-        self.cluster_number = 0
+        self.cluster_number = None
         
     def name(self):
         return "%s%s" % (self.taxonomy, self.cluster_number)
@@ -37,11 +38,20 @@ class Tree2Tax:
         # So that several clades don't get named the same thing
         node_id_to_named_nodes = {}
         
+        def isFloat(s):
+            try:
+                float(s)
+                return True
+            except ValueError:
+                return False
+            
+        bootstrap_regex = re.compile(r'^[\d\.]+:')
+        
         # when everything is in 1 cluster (doesn't happen in practice I suspect)
         # but there is a unit test..
         if len(tree) == 0:
             cl = NamedCluster('Root',original_tree2.tips())
-            cl.cluster_number = 1
+            cl.cluster_number = ''
             clusters = [cl]
 
         else:
@@ -51,13 +61,20 @@ class Tree2Tax:
                 # Find the closest ancestral named node (where ancestral includes self)
                 current = orig
                 if orig.is_tip(): current = orig.parent #tips have names, but don't count these
-                while current.parent is not None and current.name is None:
+                
+                # Keep proceeding up the tree until a node with taxonomy is found.
+                # If the tree has bootstraps, then current.name is a float (in string form)
+                # Ignore these floats because they aren't named taxonomy
+                while current.parent and (current.name is None or isFloat(current.name)):
                     current = current.parent
                     
                 if current.parent is None:
                     taxonomy = 'Root'
                 else:
                     taxonomy = current.name
+                    reg = bootstrap_regex.match(taxonomy)
+                    if reg:
+                        taxonomy = taxonomy[reg.end():]
                     
                 if orig.is_tip():
                     named_cluster = NamedCluster(taxonomy, [orig])
@@ -77,10 +94,13 @@ class Tree2Tax:
             # taxonomy, the cluster with the most sequences is given the number 1,
             # second most abundant is number 2, etc.
             for taxonomy, named_clusters in node_id_to_named_nodes.items():
-                number = 1
-                for clade in sorted(named_clusters, reverse = True, key = lambda c: len(c.tips)):
-                    clade.cluster_number = number
-                    number += 1
+                if len(named_clusters) > 1:
+                    number = 1
+                    for clade in sorted(named_clusters, reverse = True, key = lambda c: len(c.tips)):
+                        clade.cluster_number = number
+                        number += 1
+                else:
+                    named_clusters[0].cluster_number = ''
         
         return clusters
     
