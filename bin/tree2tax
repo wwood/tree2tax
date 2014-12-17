@@ -1,0 +1,48 @@
+#!/usr/bin/env python2.7
+
+import logging
+from skbio.tree import TreeNode
+from StringIO import StringIO
+import os
+import sys
+import argparse
+
+try:
+    import tree2tax
+except ImportError:
+    sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+from tree2tax.tree2tax import Tree2Tax
+
+
+
+parser = argparse.ArgumentParser(description='''--- tree2tax %s --- partitions a tree into clades separated by a given distance threshold''' % Tree2Tax().version())
+parser.add_argument('-t', '--tree', help='newick format tree file to partition', required=True)
+parser.add_argument('-d', '--threshold', help='threshold at which to partition the tree', type=float, required=True)
+parser.add_argument('--debug', help='output debug information', action="store_true")
+
+args = parser.parse_args()
+
+if args.debug:
+    logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
+
+logging.info("Reading tree file..")
+tree = TreeNode.read(args.tree)
+logging.info("Read in tree with %s tips" % tree.count(tips=True))
+
+logging.info("Clustering..")
+clusters = Tree2Tax().named_clusters(tree, args.threshold)
+
+logging.info("Found %i clusters" % len(clusters))
+# Output clade info for each tip
+clade_number = 1
+num_singleton_clades = 0
+for named_clade in clusters:
+    clade_name = "%s_%s" % (named_clade.name(), clade_number)
+    for tip in named_clade.tips:
+        print("\t".join([tip.name, clade_name]))
+    clade_number += 1
+    if len(named_clade.tips) == 1: num_singleton_clades += 1
+    
+logging.info("Of these clusters, %s contained only a single sequence" % num_singleton_clades)
