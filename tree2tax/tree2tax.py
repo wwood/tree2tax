@@ -1,7 +1,6 @@
 from skbio.tree import TreeNode
 from sets import Set
 import logging
-import IPython
 import re
 
 class NamedCluster:
