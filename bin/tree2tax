@@ -39,9 +39,8 @@ logging.info("Found %i clusters" % len(clusters))
 clade_number = 1
 num_singleton_clades = 0
 for named_clade in clusters:
-    clade_name = "%s_%s" % (named_clade.name(), clade_number)
     for tip in named_clade.tips:
-        print("\t".join([tip.name, clade_name]))
+        print("\t".join([tip.name, named_clade.name()]))
     clade_number += 1
     if len(named_clade.tips) == 1: num_singleton_clades += 1
     

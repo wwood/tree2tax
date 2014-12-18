@@ -11,7 +11,10 @@ class NamedCluster:
         self.cluster_number = None
         
     def name(self):
-        return "%s%s" % (self.taxonomy, self.cluster_number)
+        if self.cluster_number:
+            return "%s.%s" % (self.taxonomy, self.cluster_number)
+        else:
+            return self.taxonomy
 
 class Tree2Tax:
     def version(self):
@@ -99,8 +102,6 @@ class Tree2Tax:
                     for clade in sorted(named_clusters, reverse = True, key = lambda c: len(c.tips)):
                         clade.cluster_number = number
                         number += 1
-                else:
-                    named_clusters[0].cluster_number = ''
         
         return clusters
     
