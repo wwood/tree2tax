@@ -9,6 +9,8 @@ yet come to agreed upon names. Here, taxonomy is automatically assigned based on
 nodes corresponding to these thresholds are given names taken from the usual taxonomy so they are meaningful to humans
 and their formidable pattern finding skillz.
 
+Tree2tax is inspired by, but not related to, the [tax2tree](https://github.com/biocore/tax2tree) software, which doesn't suggest new taxonomic clades.
+
 Needs:
 * scikit-bio
 * an taxonomically annotated tree, tested on greengenes 99_otus.tree
