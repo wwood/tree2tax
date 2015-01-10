@@ -1,11 +1,10 @@
 from nose.tools import assert_equals, assert_true
-from tree2tax.tree2tax import Tree2Tax
+from tree2tax.tree2tax import Tree2Tax, NamedCluster
 from skbio.tree import TreeNode
 from StringIO import StringIO
 from string import split as _
-import IPython
 
-class TestCoverageStats:
+class TestTree2TaxNamedClusters:
     def assertSameClusters(self, expected, observed):
         name_clusters = [sorted([n.name for n in named_cluster.tips]) for named_cluster in observed]
         expected_name_clusters = [sorted(node_names) for node_names in expected]
@@ -68,3 +67,78 @@ class TestCoverageStats:
         self.assertSameClusters([['F'], _('A B D H')], clusters)
         assert_equals(_('G.2 G.1'), [c.name() for c in clusters])
         
+    def testClusterNamingConventionsWithSomeUnnamed(self):
+        tree = TreeNode.read(StringIO('((((A:11, B:12):10, D:9):20, F:20)G:30)root;'))
+        clusters = Tree2Tax().named_clusters(tree, 0.05) #i.e. everything is a separate cluster
+        self.assertSameClusters([['A'],['B'],['D'],['F']], clusters)
+        assert_equals(_('G.4 G.3 G.2 G.1'), [c.name() for c in clusters])
+
+        
+class TestTree2TaxNamedClusterSets:
+    def assertSameClusterSets(self, expected, observed):
+        assert_equals(len(expected), len(observed))
+        for i, e in enumerate(expected):
+            assert_equals(e[0], observed[i].threshold) #same thresholds
+            self.assertSameClusters(e[1], observed[i].clusters)
+    
+    def assertSameClusters(self, expected, observed):
+        name_clusters = [sorted([n.name for n in named_cluster.tips]) for named_cluster in observed]
+        expected_name_clusters = [sorted(node_names) for node_names in expected]
+        #print "named clusters: %s" % name_clusters
+        assert_equals(expected_name_clusters, name_clusters)
+        
+    def testSimple(self):
+        tree = TreeNode.read(StringIO('((A:0.11, B:0.12)C:0.1, D:0.2)root;'))
+        clusters = Tree2Tax().named_clusters_for_several_thresholds(tree, [0.25])
+        self.assertSameClusterSets([[0.25,[['A','B'],['D']]]], clusters)
+
+    def testSimpleTwice(self):
+        tree = TreeNode.read(StringIO('((A:0.11, B:0.12)C:0.1, D:0.2)root;'))
+        clusters = Tree2Tax().named_clusters_for_several_thresholds(tree, [0.25, 0.25])
+        self.assertSameClusterSets([[0.25,[['A','B'],['D']]], [0.25,[['A','B'],['D']]]], clusters)
+        
+    def testNormalType(self):
+        tree = TreeNode.read(StringIO('((A:0.11, B:0.12)C:0.1, D:0.2)root;'))
+        clusters = Tree2Tax().named_clusters_for_several_thresholds(tree, [0.25, 0.05])
+        self.assertSameClusterSets([[0.05,[['A'],['B'],['D']]], [0.25,[['A','B'],['D']]]], clusters)
+        assert_equals(_('C.1 C.2 Root'), [c.name() for c in clusters[0].clusters])
+        
+    def testOppositeSorting(self):
+        tree = TreeNode.read(StringIO('((A:0.11, B:0.12)C:0.1, D:0.2)root;'))
+        clusters = Tree2Tax().named_clusters_for_several_thresholds(tree, [0.05, 0.25])
+        self.assertSameClusterSets([[0.05,[['A'],['B'],['D']]], [0.25,[['A','B'],['D']]]], clusters)
+        assert_equals(_('C.1 C.2 Root'), [c.name() for c in clusters[0].clusters])
+        
+    def testNaming(self):
+        tree = TreeNode.read(StringIO('((F:20, ((A:11, B:12):10, (H:8, D:9):3):20)G:30)root;'))
+        clusters = Tree2Tax().named_clusters_for_several_thresholds(tree, [40, 25])
+        self.assertSameClusterSets([[25,[['F'], _('A B'), _('D H')]], [40,[['F'], _('A B D H')]]], clusters)
+        assert_equals(_('G.3 G.1 G.2'), [c.name() for c in clusters[0].clusters])
+        assert_equals(_('G.2 G.1'), [c.name() for c in clusters[1].clusters])
+
+    def testTipToCluster(self):
+        tree = TreeNode.read(StringIO('((F:20, ((A:11, B:12):10, (H:8, D:9):3):20)G:30)root;'))
+        clusters = Tree2Tax().named_clusters_for_several_thresholds(tree, [40, 25])
+        self.assertSameClusterSets([[25,[['F'], _('A B'), _('D H')]], [40,[['F'], _('A B D H')]]], clusters)
+        assert_equals(_('G.3 G.1 G.2'), [c.name() for c in clusters[0].clusters])
+        assert_equals(_('G.2 G.1'), [c.name() for c in clusters[1].clusters])
+        
+        tip = tree.find('F')
+        assert_equals('G.3', clusters[0].tip_to_cluster(tip).name())
+        assert_equals('G.2', clusters[1].tip_to_cluster(tip).name())
+
+        tip = tree.find('D')
+        assert_equals('G.2', clusters[0].tip_to_cluster(tip).name())
+        assert_equals('G.1', clusters[1].tip_to_cluster(tip).name())
+
+class TestNamedCluster:
+    def testCondensedName(self):
+        nc = NamedCluster('c__Halo; o__fu', ['notips'])
+        assert_equals('Halo.fu', nc.condensed_name())
+        
+        nc.cluster_number = 6
+        assert_equals('Halo.fu.6', nc.condensed_name())
+        
+        nc.taxonomy = 'c__Halo'
+        assert_equals('Halo.6', nc.condensed_name())
+    

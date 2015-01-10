@@ -6,6 +6,8 @@ from StringIO import StringIO
 import os
 import sys
 import argparse
+from string import split as _
+import IPython
 
 try:
     import tree2tax
@@ -17,7 +19,8 @@ from tree2tax.tree2tax import Tree2Tax
 
 parser = argparse.ArgumentParser(description='''--- tree2tax %s --- partitions a tree into clades separated by a given distance threshold''' % Tree2Tax().version())
 parser.add_argument('-t', '--tree', help='newick format tree file to partition', required=True)
-parser.add_argument('-d', '--threshold', help='threshold at which to partition the tree', type=float, required=True)
+parser.add_argument('-d', '--thresholds', nargs='+', help='thresholds at which to partition the tree, space separated', type=float, required=True)
+parser.add_argument('-o', '--output_taxonomy', nargs='+', help='output the taxonomy to this file', required=True)
 parser.add_argument('--debug', help='output debug information', action="store_true")
 
 args = parser.parse_args()
@@ -32,16 +35,33 @@ tree = TreeNode.read(args.tree)
 logging.info("Read in tree with %s tips" % tree.count(tips=True))
 
 logging.info("Clustering..")
-clusters = Tree2Tax().named_clusters(tree, args.threshold)
+threshold_and_clusters = Tree2Tax().named_clusters_for_several_thresholds(tree, args.thresholds)
 
-logging.info("Found %i clusters" % len(clusters))
-# Output clade info for each tip
-clade_number = 1
-num_singleton_clades = 0
-for named_clade in clusters:
-    for tip in named_clade.tips:
-        print("\t".join([tip.name, named_clade.name()]))
-    clade_number += 1
-    if len(named_clade.tips) == 1: num_singleton_clades += 1
+threshold_and_clusters.reverse() #display higher taxonomic levels first, then lower ones
+
+threshold_names = _('k p c o f g s')
     
-logging.info("Of these clusters, %s contained only a single sequence" % num_singleton_clades)
+for threshold_clusters in threshold_and_clusters:
+    clusters = threshold_clusters.clusters
+    logging.info("Found %i clusters for threshold %s" % (len(clusters), threshold_clusters.threshold))
+    
+    num_singleton_clades = 0
+    for named_clade in clusters:
+        if len(named_clade.tips) == 1: num_singleton_clades += 1
+        
+    logging.info("Of these clusters, %s contained only a single sequence" % num_singleton_clades)
+    
+IPython.embed()
+    
+with open(args.output_taxonomy,'w') as f:
+    for tip in threshold_and_clusters[0].each_tip():
+        f.write(tip.name)
+        f.write("\t");
+        
+        for i, tc in enumerate(threshold_and_clusters):
+            if i != 0: sys.stdout.write("; ")
+            f.write(threshold_names[i])
+            f.write('__')
+            f.write(tc.tip_to_cluster(tip).condensed_name())
+        f.write("\n")
+        
