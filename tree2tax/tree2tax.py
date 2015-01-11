@@ -2,7 +2,6 @@ from skbio.tree import TreeNode
 from sets import Set
 import logging
 import re
-import IPython
 
 class NamedCluster:
     def __init__(self, taxonomy, tips):
@@ -21,8 +20,11 @@ class NamedCluster:
     
     def condensed_name(self):
         '''e.g. if taxonomy is c__Halobacteria; o__Halobacteriales; f__MSP41
-        then return 'Halobacteria.o__Halobacteriales.f__MSP41' (cluster number
-        is added too, if that is present'''
+        then return 'cHalobacteria.oHalobacteriales.fMSP41' (cluster number
+        is added too, if that is present. We cannot omit the c, o or f because
+        in some rare cases two taxonomic levels have the same name except for their
+        level e.g. c__Gemmatimonadetes; o__Gemmatimonadetes in GreenGenes 
+        2013_08'''
         splits = self.taxonomy.split('; ')
         
         # get rid of f__ prefixes etc.
@@ -31,7 +33,7 @@ class NamedCluster:
         for s in splits:
             reg = regex.match(s)
             if reg:
-                splits2.append(s[reg.end():])
+                splits2.append(s[0]+s[reg.end():])
             else:
                 logging.debug("Found unexpected form for taxonomy in %s", str(s))
                 splits2.append(s)
@@ -58,8 +60,8 @@ class ThresholdAndClusters:
             self._tip_to_cluster = {}
             for cluster in self.clusters:
                 for datip in cluster.tips:
-                    if self._tip_to_cluster.has_key(key):
-                        logging.warn("Unexpectedly found multiple leaf nodes with the same name, undefined behaviour possibly immenent: %s" % tip_name)
+                    if self._tip_to_cluster.has_key(datip.name):
+                        logging.warn("Unexpectedly found multiple leaf nodes with the same name, undefined behaviour possibly imminent: %s" % tip_name)
                     else:
                         self._tip_to_cluster[datip.name] = cluster
         return self._tip_to_cluster[key]
@@ -76,10 +78,7 @@ class ThresholdAndClusters:
                 yield tip
             
 
-class Tree2Tax:
-    def version(self):
-        '0.0.1'
-        
+class Tree2Tax:        
     def named_clusters_for_several_thresholds(self, original_tree, thresholds):
         '''Given a list of thresholds, return a iterable of ThresholdAndClusters
         where the clustering has been done iteratively, providing a consistent
@@ -121,7 +120,10 @@ class Tree2Tax:
             cluster_lcas = tree.tips()
             
             # So that several clades don't get named the same thing
-            node_id_to_named_nodes = {} 
+            # it get a bit complex when several nodes are annotated as having the sam
+            # taxonomy (it happens..., in gg at least). So group by taxonomy
+            # rather than node ID
+            taxonomy_to_named_nodes = {} 
             
             # when everything is in 1 cluster (doesn't happen in practice I suspect)
             # but there is a unit test..
@@ -162,19 +164,22 @@ class Tree2Tax:
                     clusters.append(named_cluster)
                     
                     try:
-                        node_id_to_named_nodes[current.id].append(named_cluster)
+                        taxonomy_to_named_nodes[taxonomy].append(named_cluster)
                     except KeyError:
-                        node_id_to_named_nodes[current.id] = []
-                        node_id_to_named_nodes[current.id].append(named_cluster)
+                        taxonomy_to_named_nodes[taxonomy] = [named_cluster]
                 
-                if logging.getLogger().isEnabledFor(logging.DEBUG): logging.debug(node_id_to_named_nodes)
+                if logging.getLogger().isEnabledFor(logging.DEBUG): logging.debug(taxonomy_to_named_nodes)
                 # Assign cluster numbers by decreasing numbers of tips i.e. for each
                 # taxonomy, the cluster with the most sequences is given the number 1,
                 # second most abundant is number 2, etc.
-                for taxonomy, named_clusters in node_id_to_named_nodes.items():
+                for taxonomy, named_clusters in taxonomy_to_named_nodes.items():
                     if len(named_clusters) > 1:
                         number = 1
-                        for clade in sorted(named_clusters, reverse = True, key = lambda c: len(c.tips)):
+                        # sort twice (stupid python). Consider number of tips
+                        # to be more important than the minimum node ID. Need
+                        # to sort repeatably for the purposes of testing
+                        sorts1 = sorted(named_clusters, key = lambda c: min([tip.id for tip in c.tips]))
+                        for clade in sorted(sorts1, reverse = True, key = lambda c: len(c.tips)):
                             clade.cluster_number = number
                             number += 1
                             

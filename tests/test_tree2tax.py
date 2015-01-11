@@ -71,7 +71,7 @@ class TestTree2TaxNamedClusters:
         tree = TreeNode.read(StringIO('((((A:11, B:12):10, D:9):20, F:20)G:30)root;'))
         clusters = Tree2Tax().named_clusters(tree, 0.05) #i.e. everything is a separate cluster
         self.assertSameClusters([['A'],['B'],['D'],['F']], clusters)
-        assert_equals(_('G.4 G.3 G.2 G.1'), [c.name() for c in clusters])
+        assert_equals(['G.1', 'G.2', 'G.3', 'G.4'], [c.name() for c in clusters])
 
         
 class TestTree2TaxNamedClusterSets:
@@ -134,11 +134,11 @@ class TestTree2TaxNamedClusterSets:
 class TestNamedCluster:
     def testCondensedName(self):
         nc = NamedCluster('c__Halo; o__fu', ['notips'])
-        assert_equals('Halo.fu', nc.condensed_name())
+        assert_equals('cHalo.ofu', nc.condensed_name())
         
         nc.cluster_number = 6
-        assert_equals('Halo.fu.6', nc.condensed_name())
+        assert_equals('cHalo.ofu.6', nc.condensed_name())
         
         nc.taxonomy = 'c__Halo'
-        assert_equals('Halo.6', nc.condensed_name())
+        assert_equals('cHalo.6', nc.condensed_name())
     

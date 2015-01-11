@@ -7,20 +7,20 @@ import os
 import sys
 import argparse
 from string import split as _
-import IPython
 
 try:
     import tree2tax
 except ImportError:
     sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
 from tree2tax.tree2tax import Tree2Tax
+import tree2tax
 
 
 
-parser = argparse.ArgumentParser(description='''--- tree2tax %s --- partitions a tree into clades separated by a given distance threshold''' % Tree2Tax().version())
+parser = argparse.ArgumentParser(description='''--- tree2tax %s --- partitions a tree into clades separated by a given distance threshold''' % tree2tax.__version__)
 parser.add_argument('-t', '--tree', help='newick format tree file to partition', required=True)
 parser.add_argument('-d', '--thresholds', nargs='+', help='thresholds at which to partition the tree, space separated', type=float, required=True)
-parser.add_argument('-o', '--output_taxonomy', nargs='+', help='output the taxonomy to this file', required=True)
+parser.add_argument('-o', '--output_taxonomy', help='output the taxonomy to this file', required=True)
 parser.add_argument('--debug', help='output debug information', action="store_true")
 
 args = parser.parse_args()
@@ -51,17 +51,18 @@ for threshold_clusters in threshold_and_clusters:
         
     logging.info("Of these clusters, %s contained only a single sequence" % num_singleton_clades)
     
-IPython.embed()
-    
-with open(args.output_taxonomy,'w') as f:
+output_file_name = args.output_taxonomy
+with open(output_file_name,'w') as f:
     for tip in threshold_and_clusters[0].each_tip():
         f.write(tip.name)
         f.write("\t");
         
         for i, tc in enumerate(threshold_and_clusters):
-            if i != 0: sys.stdout.write("; ")
+            if i != 0: f.write("; ")
             f.write(threshold_names[i])
             f.write('__')
             f.write(tc.tip_to_cluster(tip).condensed_name())
         f.write("\n")
+        
+logging.info("Finished writing new taxonomy to %s" % output_file_name)
         
