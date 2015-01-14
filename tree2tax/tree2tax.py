@@ -2,11 +2,87 @@ from skbio.tree import TreeNode
 from sets import Set
 import logging
 import re
+import IPython
+
+class TaxonomyFunctions:
+    @staticmethod
+    def condense(taxonomy_string):
+        '''e.g. if taxonomy is c__Halobacteria; o__Halobacteriales; f__MSP41
+        then return 'cHalobacteria.oHalobacteriales.fMSP41' We cannot omit the 
+        c, o or f because
+        in some rare cases two taxonomic levels have the same name except for their
+        level e.g. c__Gemmatimonadetes; o__Gemmatimonadetes in GreenGenes 
+        2013_08'''
+        splits = taxonomy_string.split('; ')
+        
+        # get rid of f__ prefixes etc.
+        regex = re.compile(r'^.__')
+        splits2 = []
+        for s in splits:
+            reg = regex.match(s)
+            if reg:
+                splits2.append(s[0]+s[reg.end():])
+            else:
+                logging.debug("Found unexpected form for taxonomy in %s", str(s))
+                splits2.append(s)
+        return '.'.join(splits2)
+    
+    @staticmethod
+    def missing_taxonomy(tree, descendent_node, ancestral_node):
+        '''given a tree, and two nodes where one is an ancestor of another,
+        return a condensed taxonomy list representing the 
+        taxonomic information that is contained in nodes between the descendent 
+        and ancestral nodes, except for the first one encountered
+        '''
+        to_return = []
+        
+        current = descendent_node
+        while current != ancestral_node:
+            current = current.parent
+            if current is None:
+                raise Exception("descendent and ancestral nodes do not appear to be related as expected in #missing_taxonomy")
+            
+            if current != ancestral_node:
+                tax = TaxonomyFunctions().taxonomy_from_node_name(current.name)
+                if tax:
+                    to_return.append(TaxonomyFunctions().condense(tax))
+
+        # return in descending order
+        return [r for r in reversed(to_return)]
+            
+    @staticmethod
+    def taxonomy_from_node_name(node_name):
+        '''return the taxonomy incorporated at a particular node, or None
+        if it does not encode any taxonomy'''
+        
+        def isFloat(s):
+            try:
+                float(s)
+                return True
+            except ValueError:
+                return False
+        
+        if node_name is None:
+            return None
+        elif isFloat(node_name):
+            # no name, just a bootstrap
+            return None
+        else:
+            bootstrap_regex = re.compile(r'[\d\.]+:(.*)')
+            reg = bootstrap_regex.match(node_name)
+            if reg:
+                # bootstrap in name
+                return reg.groups(0)[0]
+            else:
+                # bootstrap not in name
+                return node_name
+    
 
 class NamedCluster:
-    def __init__(self, taxonomy, tips):
+    def __init__(self, taxonomy, tips, lca_node):
         self.taxonomy = taxonomy
         self.tips = tips
+        self.lca_node = lca_node
         self.cluster_number = None
         
     def name(self):
@@ -25,20 +101,7 @@ class NamedCluster:
         in some rare cases two taxonomic levels have the same name except for their
         level e.g. c__Gemmatimonadetes; o__Gemmatimonadetes in GreenGenes 
         2013_08'''
-        splits = self.taxonomy.split('; ')
-        
-        # get rid of f__ prefixes etc.
-        regex = re.compile(r'^.__')
-        splits2 = []
-        for s in splits:
-            reg = regex.match(s)
-            if reg:
-                splits2.append(s[0]+s[reg.end():])
-            else:
-                logging.debug("Found unexpected form for taxonomy in %s", str(s))
-                splits2.append(s)
-                               
-        joined = '.'.join(splits2)
+        joined = TaxonomyFunctions.condense(self.taxonomy)
         if self.cluster_number:
             return "%s.%s" % (joined, self.cluster_number)
         else:
@@ -78,14 +141,13 @@ class ThresholdAndClusters:
                 yield tip
             
 
-class Tree2Tax:        
+class Tree2Tax:
     def named_clusters_for_several_thresholds(self, original_tree, thresholds):
         '''Given a list of thresholds, return a iterable of ThresholdAndClusters
         where the clustering has been done iteratively, providing a consistent
         taxonomic annotation scheme'''
-        original_tree2 = original_tree.copy()
-        original_tree2.assign_ids()
-        tree = original_tree2.copy() #this copy gets destructively pruned as part of the algorithm
+        original_tree.assign_ids()
+        tree = original_tree.copy() #this copy gets destructively pruned as part of the algorithm
         
         # sort from smallest to largest because smaller distance thresholds
         # need to be applied before larger thresholds
@@ -93,20 +155,11 @@ class Tree2Tax:
         if logging.getLogger().isEnabledFor(logging.DEBUG): logging.debug("Found thresholds %s", str(sorted_thresholds))
         
         to_return = []
-        
-        def isFloat(s):
-            try:
-                float(s)
-                return True
-            except ValueError:
-                return False
-            
-        bootstrap_regex = re.compile(r'^[\d\.]+:')
 
         # skbio seems to be quite slow running repeated find_by_id. Do some caching 
         # to speed things up
         id_to_node = {}
-        for node in original_tree2.postorder(include_self=True):
+        for node in original_tree.postorder(include_self=True):
             id_to_node[node.id] = node
             
         clades_to_distances = {}
@@ -128,7 +181,7 @@ class Tree2Tax:
             # when everything is in 1 cluster (doesn't happen in practice I suspect)
             # but there is a unit test..
             if len(tree) == 0:
-                cl = NamedCluster('Root',original_tree2.tips())
+                cl = NamedCluster('Root', original_tree.tips(), original_tree)
                 cl.cluster_number = ''
                 clusters = [cl]
     
@@ -138,28 +191,27 @@ class Tree2Tax:
                     
                     # Find the closest ancestral named node (where ancestral does not include self)
                     current = orig
+                    
                     #in a greengenes file, tips have names, but don't count these 
                     #because they are not taxonomy but rather prokMSA IDs
-                    if orig.is_tip(): current = orig.parent
+                    if current.is_tip(): current = current.parent
                     
                     # Keep proceeding up the tree until a node with taxonomy is found.
                     # If the tree has bootstraps, then current.name is a float (in string form)
                     # Ignore these floats because they aren't named taxonomy
-                    while current.parent and (current.name is None or isFloat(current.name)):
+                    while current.parent and (current.name is None or 
+                         TaxonomyFunctions.taxonomy_from_node_name(current.name) is None):
                         current = current.parent
                         
                     if current.parent is None:
                         taxonomy = 'Root'
                     else:
-                        taxonomy = current.name
-                        reg = bootstrap_regex.match(taxonomy)
-                        if reg:
-                            taxonomy = taxonomy[reg.end():]
+                        taxonomy = TaxonomyFunctions.taxonomy_from_node_name(current.name)
                         
                     if orig.is_tip():
-                        named_cluster = NamedCluster(taxonomy, [orig])
+                        named_cluster = NamedCluster(taxonomy, [orig], orig)
                     else:
-                        named_cluster = NamedCluster(taxonomy, list(orig.tips()))
+                        named_cluster = NamedCluster(taxonomy, list(orig.tips()), orig)
                         
                     clusters.append(named_cluster)
                     
