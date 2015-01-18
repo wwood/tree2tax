@@ -77,9 +77,9 @@ with open(output_file_name,'w') as f:
                 # part of the taxonomy, if that is recorded
                 if TaxonomyFunctions.taxonomy_from_node_name(tc.tip_to_cluster(tip).lca_node.name) and len(missings) > 0:
                     
-                    f.write('%s|' % '.'.join(missings))
+                    f.write('%s..' % '.'.join(missings))
                 elif len(missings) > 1:
-                    f.write('%s|' % '.'.join(missings[:-1]))
+                    f.write('%s..' % '.'.join(missings[:-1]))
                 
             f.write(tc.tip_to_cluster(tip).condensed_name())
             last_round = tc
