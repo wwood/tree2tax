@@ -7,20 +7,35 @@ import sys
 import argparse
 
 try:
-    import tree2tax
+    import tree2tax.threshold_finder
 except ImportError:
     sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
-from tree2tax.tree2tax import Tree2Tax
+from tree2tax.threshold_finder import ThresholdFinder
 
+
+parser = argparse.ArgumentParser(description='''--- threshold_estimator --- find thresholds for a tree for particular taxonomic ranks e.g. distance between families that are in the same order''')
+parser.add_argument('-t', '--tree', help='newick format tree file to partition', required=True)
+parser.add_argument('--debug', help='output debug information', action="store_true")
+
+args = parser.parse_args()
+
+if args.debug:
+    logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
+
+threshold_names = _('k p c o f g s')
 
 # Read in the tree
-# Read in the taxonomy file
-# Get a list of all the different families
-# For each family, find the internal node
-# Find all genuses in that family
-# For each genus, find the node
-# Ensure that the genus is found within the family, otherwise don't consider it
-# For each genus, find the tip that is farthest from the taxon label
-# pairwise comparison of each genus in the family against each other - what is the maximal distance?
-# print the maximal distance with the family information
- 
+logging.info("Reading annotated tree file..")
+tree = TreeNode.read(args.tree)
+logging.info("Read in tree with %s tips" % tree.count(tips=True))
+
+for i, level_prefix in enumerate(threshold_names):
+    if i==0: continue
+    examples = ThresholdFinder().find_examples(tree, threshold_names[i-1], level_prefix)
+    for e in examples:
+        print "\t".join(threshold_names[i-1], level_prefix,
+                        e.daughter_node1.name,
+                        e.daughter_node2.name,
+                        e.distance)
