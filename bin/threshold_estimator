@@ -1,0 +1,26 @@
+#!/usr/bin/env python2.7
+
+import logging
+from skbio.tree import TreeNode
+import os
+import sys
+import argparse
+
+try:
+    import tree2tax
+except ImportError:
+    sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+from tree2tax.tree2tax import Tree2Tax
+
+
+# Read in the tree
+# Read in the taxonomy file
+# Get a list of all the different families
+# For each family, find the internal node
+# Find all genuses in that family
+# For each genus, find the node
+# Ensure that the genus is found within the family, otherwise don't consider it
+# For each genus, find the tip that is farthest from the taxon label
+# pairwise comparison of each genus in the family against each other - what is the maximal distance?
+# print the maximal distance with the family information
+ 
