@@ -5,6 +5,7 @@ from skbio.tree import TreeNode
 import os
 import sys
 import argparse
+from string import split as _
 
 try:
     import tree2tax.threshold_finder
@@ -35,7 +36,9 @@ for i, level_prefix in enumerate(threshold_names):
     if i==0: continue
     examples = ThresholdFinder().find_examples(tree, threshold_names[i-1], level_prefix)
     for e in examples:
-        print "\t".join(threshold_names[i-1], level_prefix,
+        print "\t".join([threshold_names[i-1],
+                         level_prefix,
+                         e.parent_node.name,
                         e.daughter_node1.name,
                         e.daughter_node2.name,
-                        e.distance)
+                        str(e.distance)])
