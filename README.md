@@ -21,3 +21,28 @@ How:
 git clone this repo
 PYTHONPATH=$PYTHONPATH:/path/to/tree2tax /path/to/tree2tax/bin/tree2tax -h
 ```
+
+OTU Naming Convention
+-----
+The output taxonomy file names lineages according to the following naming convention. It is somewhat involved, and requires some explanation.
+
+After a clade is defined, to name that clade tree2tax searches up the tree to find the closest named ancestral node (unless the node itself is already named). Some examples:
+```
+o__gHalococcus
+```
+An (approximately) order level grouping, where lowest ancestral named node is the genus Halococcus.
+
+```
+s__gHalobacteriaceae.1
+```
+An (approximately) species level grouping, where the lowest ancestral node is the genus Halobacteriaceae. The `.1` at the end indicates that >1 species level grouping has this same name, but the grouping above has the largest amount of tips included.
+
+```
+c__cHalobacteria.oHalobacteriales
+```
+An approximately class level grouping where the ancestral named node has been annotated as both the class Halobacteria and the order Halobacteriales
+
+```
+p__kArchaea.pEuryarchaeota|cMethanomicrobia
+```
+An approximately phylum level grouping where the ancestral named node is Methanomicrobia. The `kArchaea.pEuryarchaeota` is included because the higher level parent kingdom grouping is `k__Root`, so the Archaea and Euryarchaeota labels would otherwise be missing.
