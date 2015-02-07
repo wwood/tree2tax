@@ -18,7 +18,7 @@ from tree2tax.tree2tax import Tree2Tax
 
 
 
-parser = argparse.ArgumentParser(description='''--- tree2tax %s --- partitions a tree into clades separated by a given distance threshold''' % Tree2Tax().version())
+parser = argparse.ArgumentParser(description='''--- reports randomly selected pairs of sequences, their percent identity and tree distance''')
 parser.add_argument('-t', '--tree', help='newick format tree file to partition', required=True)
 parser.add_argument('-f', '--fasta', help='fasta file of sequences with corresponding IDs', required=True)
 parser.add_argument('-n', '--num_comparisons', type=int, help='fasta file of sequences with corresponding IDs', default=10)
