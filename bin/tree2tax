@@ -38,7 +38,7 @@ threshold_and_clusters = Tree2Tax().named_clusters_for_several_thresholds(tree, 
 
 threshold_and_clusters.reverse() #display higher taxonomic levels first, then lower ones
 
-threshold_names = _('k p c o f g s')
+threshold_names = _('K P C O F G S')
     
 for threshold_clusters in threshold_and_clusters:
     clusters = threshold_clusters.clusters
@@ -56,8 +56,6 @@ with open(output_file_name,'w') as f:
         f.write(tip.name)
         f.write("\t");
         
-        #if tip.name == '539547': IPython.embed()
-        
         last_round = None
         for i, tc in enumerate(threshold_and_clusters):
             if i != 0: f.write("; ")
@@ -73,7 +71,6 @@ with open(output_file_name,'w') as f:
                 # don't count the node that is already recorded in the other
                 # part of the taxonomy, if that is recorded
                 if TaxonomyFunctions.taxonomy_from_node_name(tc.tip_to_cluster(tip).lca_node.name) and len(missings) > 0:
-                    
                     f.write('%s..' % '.'.join(missings))
                 elif len(missings) > 1:
                     f.write('%s..' % '.'.join(missings[:-1]))
