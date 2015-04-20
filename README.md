@@ -14,7 +14,8 @@ and their formidable pattern finding skillz.
 Tree2tax is inspired by, but not related to, the [tax2tree](https://github.com/biocore/tax2tree) software, which doesn't suggest new taxonomic clades.
 
 Pre-requisites:
-* an taxonomically annotated tree, tested on greengenes 99_otus.tree
+* A taxonomically annotated tree, tested on greengenes 99_otus.tree
+* some standard Unix tools
 
 How:
 ```sh

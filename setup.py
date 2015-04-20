@@ -8,18 +8,19 @@ except ImportError:
     from distutils.core import setup
 
 
-with open('README.rst') as readme_file:
+with open('README.md') as readme_file:
     readme = readme_file.read()
 
 with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
 requirements = [
-    # TODO: put package requirements here
+    'scikit-bio>=0.2.2,<1.0',
+    'tempdir',
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
+    'nose'
 ]
 
 setup(
@@ -28,7 +29,7 @@ setup(
     description="Automatic taxonomy through consistent application of tree-based thresholding",
     long_description=readme + '\n\n' + history,
     author="Ben Woodcroft",
-    author_email='donttrustben near gmail.com',
+    author_email='b.woodcroft near uq.edu.au',
     url='https://github.com/wwood/tree2tax',
     packages=[
         'tree2tax',
@@ -37,7 +38,7 @@ setup(
                  'tree2tax'},
     include_package_data=True,
     install_requires=requirements,
-    license="BSD",
+    license="LGPL3",
     zip_safe=False,
     keywords='tree2tax',
     classifiers=[
@@ -53,5 +54,11 @@ setup(
         'Programming Language :: Python :: 3.4',
     ],
     test_suite='tests',
-    tests_require=test_requirements
+    tests_require=test_requirements,
+    scripts=[
+'bin/autotaxonomy',
+'bin/percent_identity_vs_tree_distance',
+'bin/threshold_estimator',
+'bin/tree2tax',
+]
 )

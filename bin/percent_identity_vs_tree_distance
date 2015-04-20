@@ -8,7 +8,6 @@ import argparse
 import tempfile
 import random
 import subprocess
-import IPython
 
 try:
     import tree2tax
