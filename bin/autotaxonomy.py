@@ -6,10 +6,8 @@ import sys
 import argparse
 import subprocess
 from tempdir import TempDir
-import IPython
 
-#TODO: add version
-parser = argparse.ArgumentParser(description='''--- autotax --- a pipeline creating a new taxonomy file with tree2tax suitable for use with taxtastic''')
+parser = argparse.ArgumentParser(description='''--- autotax %s --- a pipeline creating a new taxonomy file with tree2tax suitable for use with taxtastic''' % tree2tax.__version__)
 parser.add_argument('-t', '--tree', help='annotated newick format tree file to partition', required=True)
 parser.add_argument('-o', '--output_directory', help='output directory for generated files', required=True)
 parser.add_argument('--thresholds', nargs=7, help='tree distance thresholds to use for partitioning (one each for kingdom, phylum, class, order, family, genus, species)', type=float, default=[1.4,0.82,0.42,0.27,0.15,0.12,0.08])

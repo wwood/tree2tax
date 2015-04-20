@@ -43,8 +43,3 @@ class TestThresholdFinder:
         examples = ThresholdFinder().find_examples(tree, 'f', 'g')
         self.assertSameCladeDistanceSet([],
                                          examples)
-        
-        
-        
-        
-    #def 
