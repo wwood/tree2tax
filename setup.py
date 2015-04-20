@@ -23,9 +23,11 @@ test_requirements = [
     'nose'
 ]
 
+exec(open('tree2tax/version.py').read()) # loads __version__
+
 setup(
     name='tree2tax',
-    version='0.1.0',
+    version=__version__,
     description="Automatic taxonomy through consistent application of tree-based thresholding",
     long_description=readme + '\n\n' + history,
     author="Ben Woodcroft",
