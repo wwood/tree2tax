@@ -1,7 +1,6 @@
 import re
 import logging
 from sets import Set
-import IPython
 
 from skbio.tree import TreeNode
 
