@@ -6,6 +6,7 @@ import sys
 import argparse
 import subprocess
 from tempdir import TempDir
+import tree2tax
 
 parser = argparse.ArgumentParser(description='''--- autotax %s --- a pipeline creating a new taxonomy file with tree2tax suitable for use with taxtastic''' % tree2tax.__version__)
 parser.add_argument('-t', '--tree', help='annotated newick format tree file to partition', required=True)
@@ -31,10 +32,10 @@ with open('thresholds','w') as thresholds_fh:
         thresholds_fh.write("\n")
         
 # cat thresholds |parallel ~/git/tree2tax/bin/tree2tax -t /srv/db/gg/2013_08/gg_13_8_otus/trees/97_otus.tree -d {} '|' sort -rn '|' cut -f2 '|' sed "'s/; /_/g'" '>' {}.taxonomies
-cmd = "cat thresholds |parallel tree2tax -t %s -d {} '|' sort -rn '>' {}.two_column" % args.tree
+cmd = "cat thresholds |parallel tree2tax -t %s -d {} -o /dev/stdout '|' sort -rn '>' {}.two_column" % args.tree
 logging.info("Running tree2tax")
 logging.debug("Running cmd: %s" % cmd)
-#subprocess.check_call(cmd, shell=True)
+subprocess.check_call(cmd, shell=True)
 
 cmd = "cat thresholds |parallel cut -f2 {}.two_column '|' sed "'s/.__//g'" '|' sed \"'s/; /./g'\" '>' {}.taxonomies"
 logging.debug("Running cmd: %s" % cmd)

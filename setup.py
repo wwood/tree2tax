@@ -58,9 +58,9 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     scripts=[
-'bin/autotaxonomy',
-'bin/percent_identity_vs_tree_distance',
-'bin/threshold_estimator',
-'bin/tree2tax',
-]
+        'bin/autotaxonomy',
+        'bin/percent_identity_vs_tree_distance',
+        'bin/threshold_estimator',
+        'bin/tree2tax'
+    ]
 )

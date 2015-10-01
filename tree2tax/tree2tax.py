@@ -299,7 +299,7 @@ class Tree2Tax:
                         clades_to_distances[parental.id] = max_dist
                         if logging.getLogger().isEnabledFor(logging.DEBUG): logging.debug("Setting maximal distance at %s" % max_dist)
 
-                        if logging.getLogger().isEnabledFor(logging.DEBUG): logging.debug(tree.ascii_art())
+                        #if logging.getLogger().isEnabledFor(logging.DEBUG): logging.debug(tree.ascii_art())
                     else:
                         # Don't merge, but remove bro node from the list to visit,
                         # if it isn't already removed
