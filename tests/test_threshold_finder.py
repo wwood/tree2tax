@@ -1,17 +1,21 @@
-from nose.tools import assert_equals, assert_true
-from tree2tax.threshold_finder import ThresholdFinder
 from skbio.tree import TreeNode
 from StringIO import StringIO
-from string import split as _
+import sys
+import os
+import unittest
 
-class TestThresholdFinder:
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+from tree2tax.threshold_finder import ThresholdFinder,\
+    ThresholdInconsistencyException
+
+class Tests(unittest.TestCase):
     def assertSameCladeDistanceSet(self, expected, observed):
-        assert_equals(len(expected), len(observed))
+        self.assertEqual(len(expected), len(observed))
         for i, exp in enumerate(expected):
-            assert_equals(exp[0], observed[i].parent_node.name)
-            assert_equals(sorted([exp[1], exp[2]]), \
+            self.assertEqual(exp[0], observed[i].parent_node.name)
+            self.assertEqual(sorted([exp[1], exp[2]]), \
                           sorted([observed[i].daughter_node1.name, observed[i].daughter_node2.name]))
-            assert_equals(exp[3], observed[i].distance)
+            self.assertEqual(exp[3], observed[i].distance)
     
     def testSimple(self):
         tree = TreeNode.read(StringIO("(((A:1, B:2)'g__genus1':3, (C:4, D:5)'g__genus2':6)'f__family':10)root;"))
@@ -43,3 +47,15 @@ class TestThresholdFinder:
         examples = ThresholdFinder().find_examples(tree, 'f', 'g')
         self.assertSameCladeDistanceSet([],
                                          examples)
+        
+    def test_find_thresholds_from_example_distances(self):
+        finder = ThresholdFinder()
+        self.assertEqual([2.5,1.5], finder._find_thresholds_from_example_distances([3,2,1]))
+        self.assertEqual([3.0,2.5,1.5], finder._find_thresholds_from_example_distances([None,3,2,1]))
+        self.assertEqual([2.5,1.5,1.0], finder._find_thresholds_from_example_distances([3,2,1,None]))
+        self.assertEqual([2.5,1.5,1.0], finder._find_thresholds_from_example_distances([3,2,1,2]))
+        with self.assertRaises(ThresholdInconsistencyException):
+            finder._find_thresholds_from_example_distances([3,2,1,2,1])
+        
+if __name__ == "__main__":
+    unittest.main()

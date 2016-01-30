@@ -11,13 +11,16 @@ try:
     import tree2tax
 except ImportError:
     sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+import tree2tax
 from tree2tax.tree2tax import Tree2Tax, TaxonomyFunctions
+from tree2tax.threshold_finder import ThresholdFinder
 
 
 
 parser = argparse.ArgumentParser(description='''--- tree2tax %s --- partitions a tree into clades separated by a given distance threshold''' % tree2tax.__version__)
 parser.add_argument('-t', '--tree', help='newick format tree file to partition', required=True)
-parser.add_argument('-d', '--thresholds', nargs='+', help='thresholds at which to partition the tree, space separated', type=float, required=True)
+parser.add_argument('-d', '--thresholds', nargs='+', help='thresholds at which to partition the tree, space separated', type=float)
+parser.add_argument('--find_thresholds', action='store_true', help='thresholds at which to partition the tree, space separated')
 parser.add_argument('-o', '--output_taxonomy', help='output the taxonomy to this file', required=True)
 parser.add_argument('--debug', help='output debug information', action="store_true")
 
@@ -27,13 +30,22 @@ if args.debug:
     logging.basicConfig(level=logging.DEBUG)
 else:
     logging.basicConfig(level=logging.INFO)
+    
+if (not args.find_thresholds and args.thresholds is None) or \
+    (args.find_thresholds and args.thresholds):
+    logging.error("Exactly one of --thresholds and --find_thresholds must be specified")
 
 logging.info("Reading tree file..")
 tree = TreeNode.read(args.tree)
 logging.info("Read in tree with %s tips" % tree.count(tips=True))
 
+if args.find_thresholds:
+    thresholds = ThresholdFinder().find_thresholds(tree, _('k p c o f g s'))
+else:
+    thresholds = args.thresholds
+    
 logging.info("Clustering..")
-threshold_and_clusters = Tree2Tax().named_clusters_for_several_thresholds(tree, args.thresholds)
+threshold_and_clusters = Tree2Tax().named_clusters_for_several_thresholds(tree, thresholds)
 
 threshold_and_clusters.reverse() #display higher taxonomic levels first, then lower ones
 

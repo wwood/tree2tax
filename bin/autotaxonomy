@@ -2,10 +2,8 @@
 
 import logging
 import os
-import sys
 import argparse
 import subprocess
-from tempdir import TempDir
 import tree2tax
 
 parser = argparse.ArgumentParser(description='''--- autotax %s --- a pipeline creating a new taxonomy file with tree2tax suitable for use with taxtastic''' % tree2tax.__version__)

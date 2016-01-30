@@ -33,8 +33,95 @@ class Stack:
 
     def pop(self):
         return self.__storage.pop()
+    
+class ThresholdInconsistencyException(Exception): pass
 
 class ThresholdFinder:
+    def find_thresholds(self, annotated_tree, prefixes):
+        '''Find tree distance thresholds that separate taxonomic ranks. Start
+        by finding a list of examples of e.g. the distances between two genera
+        in a family, and then return half-way between the medians of each 
+        taxonomic level.
+        
+        Parameters
+        ----------
+        annotated_tree: TreeNode
+            An tree with taxonomic annotation decorated on it, in the node
+            names.
+        prefixes: list of single characters strings
+            A list of prefixes representing each taxonomic rank e.g.
+            string.split('k p c o f g s')
+        '''
+        median_distances = []
+        for i, level_prefix in enumerate(prefixes):
+            if i==0: continue
+            examples = self.find_examples(annotated_tree, prefixes[i-1], level_prefix)
+            if len(examples) > 0:
+                median_distances.append(self._median([e.distance for e in examples]))
+                logging.info("Found distances for %i pairs for level prefix %s" % (len(examples), level_prefix))
+            else:
+                median_distances.append(None)
+                logging.warn("No pairs were found for level prefix %s" % level_prefix)
+        return self._find_thresholds_from_example_distances(median_distances)
+            
+    def _median(self, lst):
+        '''Return median of a list of floats'''
+        even = (0 if len(lst) % 2 else 1) + 1
+        half = (len(lst) - 1) / 2
+        return sum(sorted(lst)[half:half + even]) / float(even)
+    
+    def _find_thresholds_from_example_distances(self, example_distances):
+        '''Given a list of floats or Nones, return a list which is halfway
+        between each element of the list. However, deal gracefully with Nones
+        which indicate unknown estimations, and require the distances to be
+        monotonically decreasing (since tree distance thresholds must decrease
+        as we progress down the taxonomic levels.
+        
+        Parameters
+        ----------
+        example_distances: list of float/None
+            distances to find thresholds from
+        '''
+        # find first float
+        # set Nones before to this top level
+        # the last one might be big, set it to the next lowest
+        # if None or a bigger one is detected in the middle, error out
+        distances2 = []
+        state = 'start'
+        for i, dist in enumerate(example_distances):
+            if state == 'start':
+                if dist is not None:
+                    for _ in range(0, i+1):
+                        distances2.append(dist)
+                        state = 'middle'
+            elif state == 'middle':
+                if dist is None or dist > distances2[i-1]:
+                    state = 'possible_end'
+                    distances2.append(distances2[i-1])
+                else:
+                    distances2.append(dist)
+            elif state == 'possible_end':
+                if dist is not None:
+                    raise ThresholdInconsistencyException("Failed to sanitise taxonomy-wise distances %s" % str(example_distances))
+                distances2.append(distances2[i-1])
+            else:
+                raise Exception("Programming error")
+            
+        if len(distances2) == 0:
+            # All None
+            raise ThresholdInconsistencyException("Failed to sanitise taxonomy-wise distances %s" % str(example_distances))
+        
+        thresholds = []
+        last_dist = None
+        for i, dist in enumerate(distances2):
+            if i > 0:
+                thresholds.append((dist+last_dist)/2.0)
+            last_dist = dist
+        
+        return thresholds
+        
+        
+    
     def find_examples(self, tree, upper_prefix, lower_prefix):
         '''return a CladeDistanceSet of pairs of clades from the lower_prefix
         rank that are sisters in the upper_prefix rank'''
