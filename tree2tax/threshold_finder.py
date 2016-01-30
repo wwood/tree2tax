@@ -2,8 +2,6 @@ import re
 import logging
 from sets import Set
 
-from skbio.tree import TreeNode
-
 
 
 class CladeDistanceSet:
@@ -44,16 +42,20 @@ class ThresholdFinder:
         
         # get a list of nodes that are at the upper threshold, by
         # descending the tree
-        upper_prefix_regex = re.compile(r'(; ){0,1}%s__' % upper_prefix)
+        upper_prefix_regex = re.compile(r'(\d+:){0,1}.*(; ){0,1}%s__' % upper_prefix)
         upper_nodes = []
         for node in tree.non_tips():
-            if node.name and upper_prefix_regex.match(node.name):
-                upper_nodes.append(node)
+            if node.name: 
+                if upper_prefix_regex.match(node.name):
+                    upper_nodes.append(node)
+                else:
+                    pass
+                    #logging.debug("Node name does not match expected type: %s" % node.name)
         logging.debug("Found %s upper nodes" % len(upper_nodes))
         
         # For each of these upper class prefixes    
         # find all the lower level nodes
-        lower_prefix_regex = re.compile(r'(; ){0,1}%s__' % lower_prefix)    
+        lower_prefix_regex = re.compile(r'(\d+:){0,1}.*(; ){0,1}%s__' % lower_prefix)    
         for unode in upper_nodes:
             lower_nodes = []
             for node in unode.non_tips(True):

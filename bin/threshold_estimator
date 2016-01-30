@@ -35,10 +35,13 @@ logging.info("Read in tree with %s tips" % tree.count(tips=True))
 for i, level_prefix in enumerate(threshold_names):
     if i==0: continue
     examples = ThresholdFinder().find_examples(tree, threshold_names[i-1], level_prefix)
+    count = 0
     for e in examples:
+        count += 1
         print "\t".join([threshold_names[i-1],
                          level_prefix,
                          e.parent_node.name,
                         e.daughter_node1.name,
                         e.daughter_node2.name,
                         str(e.distance)])
+    logging.info("Output distances for %i pairs for level prefix %s" % (count, level_prefix))
