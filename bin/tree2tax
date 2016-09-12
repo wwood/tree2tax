@@ -20,7 +20,7 @@ parser.add_argument('-d', '--thresholds', nargs='+', help='thresholds at which t
 parser.add_argument('--find_thresholds', action='store_true', help='thresholds at which to partition the tree, space separated')
 parser.add_argument('-o', '--output_taxonomy', help='output the taxonomy to this file', required=True)
 parser.add_argument('--taxonomic_prefixes', help='e.g. "d p c o f g s"', default='k p c o f g s')
-parser.add_argument('--replace_spaces_with_underscores', action='store_true', help='run replace(" ","_") on all non-tip nodes')
+parser.add_argument('--replace_spaces_with_underscores', action='store_true', help='run replace("  ","__") on all non-tip nodes so underscores are preserved in node names')
 parser.add_argument('--debug', help='output debug information', action="store_true")
 
 args = parser.parse_args()
@@ -40,7 +40,7 @@ logging.info("Read in tree with %s tips" % tree.count(tips=True))
 
 if args.replace_spaces_with_underscores:
     for node in tree.non_tips():
-        if node.name: node.name = node.name.replace(' ','_')
+        if node.name: node.name = node.name.replace('  ','__')
 
 if args.find_thresholds:
     thresholds = ThresholdFinder().find_thresholds(tree, _(args.taxonomic_prefixes))
