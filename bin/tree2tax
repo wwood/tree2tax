@@ -7,10 +7,7 @@ import sys
 import argparse
 from string import split as _
 
-try:
-    import tree2tax
-except ImportError:
-    sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..'))
 import tree2tax
 from tree2tax.tree2tax import Tree2Tax, TaxonomyFunctions
 from tree2tax.threshold_finder import ThresholdFinder
